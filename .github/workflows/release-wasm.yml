@@ -1,0 +1,58 @@
+name: Release WASM
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build wasm
+        run: |
+          mkdir -p dist
+          GOOS=wasip1 GOARCH=wasm go build -trimpath -ldflags "-s -w" -o dist/sqlc-dts.wasm .
+          sha256sum dist/sqlc-dts.wasm | awk '{print $1}' > dist/sqlc-dts.wasm.sha256
+
+      - name: Publish immutable release asset
+        id: immutable
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: wasm-${{ github.sha }}
+          name: wasm-${{ github.sha }}
+          files: |
+            dist/sqlc-dts.wasm
+            dist/sqlc-dts.wasm.sha256
+          generate_release_notes: true
+
+      - name: Publish latest release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: latest
+          make_latest: false
+          overwrite_files: true
+          files: |
+            dist/sqlc-dts.wasm
+            dist/sqlc-dts.wasm.sha256
+
+      - name: Print links
+        run: |
+          echo "Immutable WASM URL: https://github.com/${{ github.repository }}/releases/download/wasm-${{ github.sha }}/sqlc-dts.wasm"
+          echo "Immutable SHA URL : https://github.com/${{ github.repository }}/releases/download/wasm-${{ github.sha }}/sqlc-dts.wasm.sha256"
+          echo "Latest WASM URL   : https://github.com/${{ github.repository }}/releases/latest/download/sqlc-dts.wasm"
+          echo "Latest SHA URL    : https://github.com/${{ github.repository }}/releases/latest/download/sqlc-dts.wasm.sha256"

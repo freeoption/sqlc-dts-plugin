@@ -1,0 +1,13 @@
+# binaries / build outputs
+sqlc-dts
+*.wasm
+dist/
+
+# go
+*.test
+coverage.out
+
+# editor
+.DS_Store
+.idea/
+.vscode/
